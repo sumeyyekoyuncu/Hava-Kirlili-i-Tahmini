@@ -1,2 +1,2 @@
-# Hava-Kirlili-i-Tahmini
+# Hava-Kirliligi-Tahmini
 https://youtu.be/xjdFDcWANFg
