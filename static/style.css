@@ -1,0 +1,104 @@
+/* style.css */
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(to right, #e0f7fa, #fff);
+  margin: 0;
+  padding: 20px;
+  color: #333;
+}
+
+h2 {
+  margin-bottom: 10px;
+  font-size: 1.5rem;
+  color: #00796b;
+}
+
+.selection-container {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  max-width: 600px;
+  margin: 0 auto 30px;
+  text-align: center;
+}
+
+select {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin: 10px auto;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  transition: border-color 0.3s;
+}
+
+select:hover,
+select:focus {
+  border-color: #00796b;
+  outline: none;
+}
+
+.hidden {
+  display: none;
+}
+
+#cityInfo {
+  margin-top: 15px;
+  font-size: 1.1rem;
+  color: #333;
+  background-color: #e0f2f1;
+  border-left: 5px solid #00796b;
+  padding: 10px;
+  border-radius: 6px;
+  white-space: pre-line;
+}
+
+#chartTitle {
+  text-align: center;
+  margin-bottom: 10px;
+  font-size: 1.3rem;
+  color: #004d40;
+}
+#bgVideo {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  min-width: 100%;
+  min-height: 100%;
+  z-index: -1;
+  object-fit: cover;
+  filter: brightness(0.4); /* Karanlıklaştırma */
+}
+canvas#myChart {
+  display: block;
+  max-width: 800px;     /* Genişliği artır */
+  height: 500px;        /* Yüksekliği artır */
+  margin: 0 auto;
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+  .selection-container {
+    padding: 15px;
+  }
+
+  select {
+    font-size: 0.9rem;
+  }
+
+  h2, #chartTitle {
+    font-size: 1.2rem;
+  }
+
+  #cityInfo {
+    font-size: 1rem;
+  }
+}
