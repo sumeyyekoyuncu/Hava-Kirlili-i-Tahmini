@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hava Kirliliği Analizi</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body onload="loadCountries()">
+<video autoplay muted loop id="bgVideo">
+  <source src="{{ url_for('static', filename='global.mp4') }}" type="video/mp4" />
+  Tarayıcınız video etiketini desteklemiyor.
+</video>
+
+
+  <!-- Seçim Alanı -->
+  <div class="selection-container">
+    <h2>Hangi ülkeye bakmak istiyorsunuz?</h2>
+
+    <!-- Ülke -->
+    <select id="countrySelect" onchange="loadCities()">
+      <option value="">Ülke Seçin</option>
+    </select>
+
+    <!-- Şehir -->
+    <select id="citySelect" class="hidden" onchange="showData()">
+      <option value="">Şehir Seçin</option>
+    </select>
+
+    <!-- Şehir Bilgisi -->
+    <h2 id="cityInfo" class="hidden"></h2>
+  </div>
+
+  <!-- Grafik Alanı -->
+  <div>
+    <h2 id="chartTitle" class="hidden"></h2>
+    <canvas id="myChart" class="hidden"></canvas>
+  </div>
+
+<script>
+  let chartInstance = null;
+
+  function loadCountries() {
+    fetch("http://localhost:5000/api/countries")
+      .then(res => res.json())
+      .then(countries => {
+        const countrySelect = document.getElementById("countrySelect");
+        countrySelect.innerHTML = '<option value="">Ülke Seçin</option>';
+        countries.forEach(country => {
+          const option = document.createElement("option");
+          option.value = country;
+          option.textContent = country;
+          countrySelect.appendChild(option);
+        });
+      })
+      .catch(err => console.error("Ülke yüklenirken hata:", err));
+  }
+
+  function loadCities() {
+    const country = document.getElementById("countrySelect").value;
+    const citySelect = document.getElementById("citySelect");
+
+    if (!country) {
+      citySelect.classList.add("hidden");
+      citySelect.innerHTML = '<option value="">Şehir Seçin</option>';
+      return;
+    }
+
+    fetch(`http://localhost:5000/api/countries/${encodeURIComponent(country)}/cities`)
+      .then(res => res.json())
+      .then(cities => {
+        if (cities.error) {
+          alert(cities.error);
+          citySelect.classList.add("hidden");
+          return;
+        }
+        citySelect.innerHTML = '<option value="">Şehir Seçin</option>';
+        cities.forEach(city => {
+          const option = document.createElement("option");
+          option.value = city;
+          option.textContent = city;
+          citySelect.appendChild(option);
+        });
+        citySelect.classList.remove("hidden");
+      })
+      .catch(err => {
+        console.error("Şehir yüklenirken hata:", err);
+        citySelect.classList.add("hidden");
+      });
+  }
+
+  function showData() {
+    const city = document.getElementById("citySelect").value;
+    const cityInfo = document.getElementById("cityInfo");
+    const chartTitle = document.getElementById("chartTitle");
+    const myChartCanvas = document.getElementById("myChart");
+
+    if (!city) {
+      cityInfo.classList.add("hidden");
+      chartTitle.classList.add("hidden");
+      myChartCanvas.classList.add("hidden");
+      return;
+    }
+
+    cityInfo.textContent = `${city} için veri yükleniyor...`;
+    cityInfo.classList.remove("hidden");
+
+    fetch(`http://localhost:5000/api/cities/${encodeURIComponent(city)}`)
+      .then(res => {
+        if (!res.ok) throw new Error("Veri alınamadı");
+        return res.json();
+      })
+      .then(data => {
+        if (!data || data.length === 0) {
+          cityInfo.textContent = "Veri bulunamadı.";
+          return;
+        }
+
+        const AQI_Value = data[0]["AQI Value"];
+        const AQI_Category = data[0]["AQI Category"];
+        const PM25 = parseFloat(data[0]["PM2.5 AQI Value"]);
+        const CO = parseFloat(data[0]["CO AQI Value"]);
+        const NO2 = parseFloat(data[0]["NO2 AQI Value"]);
+        const Ozone = parseFloat(data[0]["Ozone AQI Value"]);
+
+        cityInfo.textContent = `${city} için AQI: ${AQI_Value}, Kategori: ${AQI_Category}`;
+        chartTitle.textContent = `${city} - Hava Kirliliği Grafiği`;
+        chartTitle.classList.remove("hidden");
+        myChartCanvas.classList.remove("hidden");
+
+        const ctx = myChartCanvas.getContext("2d");
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: ["PM2.5", "CO", "NO2", "Ozone"],
+            datasets: [{
+              label: "Kirlilik Değerleri",
+              data: [PM25, CO, NO2, Ozone],
+              backgroundColor: [
+                "rgba(255, 99, 132, 0.2)",
+                "rgba(54, 162, 235, 0.2)",
+                "rgba(255, 206, 86, 0.2)",
+                "rgba(75, 192, 192, 0.2)"
+              ],
+              borderColor: [
+                "rgba(255, 99, 132, 1)",
+                "rgba(54, 162, 235, 1)",
+                "rgba(255, 206, 86, 1)",
+                "rgba(75, 192, 192, 1)"
+              ],
+              borderWidth: 1
+            }]
+          },
+          options: {
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
+
+        // Tahmini AQI değerini çağır
+        fetch("http://localhost:5000/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ PM25, CO, NO2, Ozone })
+        })
+        .then(res => res.json())
+        .then(predictionData => {
+          if (predictionData.error) {
+            cityInfo.textContent += "\nTahmin yapılamadı: " + predictionData.error;
+          } else {
+            cityInfo.textContent += `\n📈 Tahmini AQI Değeri: ${predictionData.prediction}`;
+          }
+        })
+        .catch(err => {
+          cityInfo.textContent += "\nTahmin yapılırken hata oluştu.";
+          console.error(err);
+        });
+
+      })
+      .catch(err => {
+        cityInfo.textContent = "Veri alınırken hata oluştu.";
+        console.error(err);
+      });
+  }
+</script>
+
+</body>
+</html>
